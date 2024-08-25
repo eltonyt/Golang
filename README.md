@@ -119,3 +119,12 @@
     	return
     }
     ```
+    
+- Constants
+    - character, string, boolean, or numeric values
+    - Constants cannot be declared using the syntax `:=`
+- Bitwise Ops
+    - `<<` Left Shift
+    - `>>` Right Shift
+- Iota
+    - Used to efficiently sign values to constant - incremental values
