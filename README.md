@@ -128,3 +128,62 @@
     - `>>` Right Shift
 - Iota
     - Used to efficiently sign values to constant - incremental values
+	
+### Section 6 - Fundamentals for Programming Beginners - Skipped
+
+### Section 7 - Environment Setup - Skipped
+
+### Section 8 - Go mod and dependency management
+
+- Spaghetti Code vs Modular code/Structure Code
+    - Spaghetti Code - Codes in a long file
+- Go Mod File - Under the project folder
+    - Init - go mod init <some-module-name>
+    - Example
+        
+        ```go
+        module xxxx
+        
+        go.1.20
+        
+        require xxxx <version>
+        ```
+        
+    - Help manages the dependencies for current project
+    - `go get [github.com/xxx/xxx@latest](http://github.com/xxx/xxx@latest)` Add dependency to the mode file
+    - `go mod tidy` helps update dependency and add that to your mod file
+- visible/not visible; exported/not exported
+    - If 1st letter of function name or variable is capitalized, then it’s visible by other go files when those go files try to import current go file.
+- Example:
+    - Puppy depends on Dog, Main depends on Puppy
+    
+    ```go
+    module xxxx
+    
+    go.1.20
+    
+    require xx/xx/puppy <version>
+    require xx/xx/dog <version>           // indirect 
+    ```
+    
+
+### Section 9 - Hands-on Exercises
+
+- Build - `go build xxx.go` Generates a executable files
+    - Windows - `GOOS=windows go build`
+    - Max - `GOOS=darwin go build`
+    - Linux - `GOOS=linux go build`
+- Install - `go install xxx` Helps generate the executable file under directory $GOPATH
+
+### Section 10 - Encryption, etc
+
+- Keys
+    - Synchronized Key
+    - Asynchronized Kye - others w public keys, I own private key
+- Communication
+    - simplex
+        - Information flows in one direction
+    - half-duplex
+        - Information can flow in both directions, but not at the same time
+    - full-duplex
+        - Information can flow in both directions simultaneously
