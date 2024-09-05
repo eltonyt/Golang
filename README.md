@@ -187,3 +187,117 @@
         - Information can flow in both directions, but not at the same time
     - full-duplex
         - Information can flow in both directions simultaneously
+### Section 11 - Control Flow
+
+- Go runtime system
+    - Goroutine management
+    - Garbage Collection
+    - Memory Management
+    - Channel Management
+        - Communications between goroutines
+    - Stack Management
+- func init() {} - Run before anything within the go file
+    - niladic - no argument needed function
+- IF Statement
+    
+    ```go
+    if (condition) { }
+    ```
+    
+    - Comparison Operators
+        
+        ```go
+        ==, !=, <, <=, >, >=
+        ```
+        
+    - Logic Operators
+        
+        ```go
+        &&, ||, !
+        ```
+        
+    - Statement statement Idiom
+        
+        ```go
+        // Variable z is only available within the condition scope
+        if z:= f(); z < y {
+        	return z
+        }
+        else {
+        	return y
+        }
+        ```
+        
+        - ok idiom - try to find out whether the assigning statement status is ok
+            
+            ```go
+            if x, ok := m["Q"]; ok {
+            	fmt.Printf("Value for key Q is %d.\n", x)
+            } else {
+            	fmt.Printf("Value for key Q does not exist.")
+            }
+            ```
+            
+- Switch - same as java, but no need of `break` anymore
+    - keyword fallthrough - tells the program to consider other switch cases
+- Select - For channels and concurrency
+    - Concurrency vs parallelism
+        - Concurrency - code that is written in a concurrent design pattern - meaning that the code has the potential ability to execute multiple tasks simultaneously, where each task may make progress independently of the others - **using goroutines, lightweight threads of execution that are managed by the Go runtime**
+        - Parallelism - the ability of a program to execute multiple tasks simultaneously by utilizing multiple CPUs or cores
+    - Example
+        
+        ```go
+        ch1 := make(chan int)
+        ch2 := make(chan int)
+        
+        d1 := time.Duration(rand.Int63n(250))
+        d2 := time.Duration(rand.Int63n(250))
+        
+        go func() {
+        	time.Sleep(d1 * time.Millisecond)
+        	ch1 <- 41
+        }()
+        
+        go func() {
+        	time.Sleep(d2 * time.Millisecond)
+        	ch2 <- 41
+        }()
+        
+        select {
+        case v1 := <- ch1:
+        	fmt.Println("Value from channel 1", v1)
+        case v2 := <- ch2:
+        	fmt.Println("Value from channel 2", v2)
+        }
+        ```
+        
+- For Loops
+    - **for init; condition; post {}** - for i := 0; i < 5; i ++
+    - **for condition {}**
+    - **for {}**
+- For range loops - Loops through a data structure
+    - Array
+        
+        ```go
+        xi := []int{1, 2, 3, 4, 5}
+        // PRINT OUT INDEX AND THE VALUE
+        for i, v := range xi {
+        	fmt.Println("rangeing over a slice", i, v)
+        }
+        ```
+        
+    - Map
+        
+        ```go
+        m := map[string]int {
+        	"james":42,
+        	"MoneyPenny":32,
+        }
+        // PRINT OUT KEY VALUE PAIRS
+        for k,v := range m {
+        	fmt.Println("ranging over a map", k, v)
+        }
+        ```
+        
+
+### Section 12 - Control Flow Exercises - Easy & Skipped
