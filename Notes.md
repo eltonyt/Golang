@@ -845,3 +845,361 @@
     - Within terminal
         - `go doc -cmd -all` shows all comments within the go code
         - `go doc -cmd -u`
+		
+### Section 21 - Pointers
+
+- Address operator (**&**) - Same in C++ or C
+- Dereferencing Operator (*) - Same in C++ or C → Get the value stored at a memory address
+    
+    ```go
+    func main() {
+    	x := 42
+    	fmt.Println(x) -> Value
+    	fmt.Println(&x) -> Address
+    }
+    ```
+    
+- Value Semantics
+    - When the actual data of a variable is passed to a function or assig ed to another variable. This means that the new variable or function parameter gets a completely independent copy of the data
+- Pointer Semantics
+    - passing the memory address (a “pointer”) rather than the data itself. This means that you can modify the original data, not just a copy of it.
+- Method Set - the set of methods attached to a type
+    - **Determine what methods attach to a TYPE.**
+    - The method set of type T consists of all methods with receiver type T.
+        - These methods can be called using variables of type T.
+    - The method set of a type *T consists of all methods with receiver *T or T
+        - These methods can be called using variables of type *T.
+        - it can call methods of the corresponding non-pointer type as well
+    
+    ```go
+    type dog struct {
+    	first string
+    }
+    
+    func (d dog) walk() {
+    	fmt.Println("My Name is ", d.first, "and I'm walking")
+    }
+    
+    func (d *dog) walk() {
+    	d.first = "rover"
+    	fmt.Println("My Name is ", d.first, "and I'm running")
+    }
+    
+    type youngin interface {
+    	walk()
+    	run()
+    }
+    
+    func youngRun(y youngin) {
+    	y.run()
+    }
+    
+    func main() {
+    	// value receivers
+    	d1 := dog{"henry"}
+    	d1.walk()
+    	d1.run()
+    	youndRun(d1) -> This won't work - Reason - see above
+    	
+    	// pointer receivers
+    	d2 := &dog{"Jerry"}
+    	d2.walk()
+    	d2.run()
+    	youngRun(d2) -> This works - Reason - see above
+    }
+    ```
+    
+
+### Section 23 - Generics
+
+- Example
+
+```go
+package main
+
+import "fmt"
+
+func addI(a, b int) int {
+	return a + b
+}
+
+func addF(a, b float64) float64 {
+	return a + b
+}
+
+func addT[T int | float64](a, b T) T {
+	return a + b
+}
+
+func main() {
+	fmt.Println(addI(1, 2))
+	fmt.Println(addF(1.2, 2.2))
+	fmt.Println(addT(1, 2))
+	fmt.Println(addT(1.2, 2.2))
+}
+
+```
+
+- Type Constraint
+    - `[T int | float64]`
+- Type Set Interface
+    - Create a interface that will be used as the type later
+    
+    ```go
+    package main
+    
+    import "fmt"
+    
+    func addI(a, b int) int {
+    	return a + b
+    }
+    
+    func addF(a, b float64) float64 {
+    	return a + b
+    }
+    
+    type myNumbers interface {
+    	int | float64
+    }
+    
+    func addT[T myNumbers](a, b T) T {
+    	return a + b
+    }
+    
+    func main() {
+    	fmt.Println(addI(1, 2))
+    	fmt.Println(addF(1.2, 2.2))
+    	fmt.Println(addT(1, 2))
+    	fmt.Println(addT(1.2, 2.2))
+    }
+    ```
+    
+- Type Alias & Underlying type constraints
+    
+    ```go
+    package main
+    
+    import "fmt"
+    
+    func addI(a, b int) int {
+    	return a + b
+    }
+    
+    func addF(a, b float64) float64 {
+    	return a + b
+    }
+    
+    // ~ helps tell program that alias can be used as well
+    type myNumbers interface {
+    	~int | ~float64
+    }
+    
+    func addT[T myNumbers](a, b T) T {
+    	return a + b
+    }
+    
+    type myAlias int
+    
+    func main() {
+    var n myAlias = 42 
+    	fmt.Println(addI(1, 2))
+    	fmt.Println(addF(1.2, 2.2))
+    	fmt.Println(addT(n, 2))
+    	fmt.Println(addT(1.2, 2.2))
+    }
+    ```
+    
+- Package Constraints
+    - A package that helps generate several interfaces which combines some primitive types together
+        - i.e. Signed | Unsigned → Integer
+- Concrete Type vs Interface Type
+    - Concrete Type - a type that you can directly instantiate or create a value from. int, bool, string, float, arrays, slices, maps, and structs, among others
+        
+        ```go
+        type Employee struct {
+        	Name string
+        	Age int
+        }
+        emp := Employee{......}
+        ```
+        
+    - Interface Types - Abstract - they represent behavior of type but not a specific set of values
+        
+        ```go
+        type Reader interface {
+        	Read(p []byte)(n int, err error)
+        }
+        ```
+        
+
+### Section 26 - Concurrency
+
+- History
+    - 2006 Intel → Multi-core CPU
+    - 2007 Go
+- 1 CPU → not parallel
+- Concurrency → Code that can be ran parallel. If you only have 1 CPU, then the application cannot be ran parallelly
+- WaitGroup - `var wg sync.WaitGroup`
+    - Add(delta int) - Wait for amount of delta things
+    - Wait() → tells the main program to wait until all go routines are finished
+    - Done() → This function is added to that specific routine function
+        
+        ```go
+        package main
+        
+        import (
+        	"fmt"
+        	"runtime"
+        	"sync"
+        )
+        
+        var wg sync.WaitGroup
+        
+        func main() {
+        	fmt.Println("OS\t\t", runtime.GOOS)
+        	fmt.Println("ARCH\t\t", runtime.GOARCH)
+        	fmt.Println("CPUs\t\t", runtime.NumCPU())
+        	fmt.Println("Goroutines\t\t", runtime.NumGoroutine())
+        
+        	wg.Add(2)
+        	go foo()
+        	go bar()
+        
+        	fmt.Println("CPUs\t\t", runtime.NumCPU())
+        	fmt.Println("Goroutines\t\t", runtime.NumGoroutine())
+        	wg.Wait()
+        }
+        
+        func foo() {
+        	for i := 0; i < 10; i++ {
+        		fmt.Println("foo: ", i)
+        	}
+        	wg.Done()
+        }
+        
+        func bar() {
+        	for i := 0; i < 10; i++ {
+        		fmt.Println("bar: ", i)
+        	}
+        	wg.Done()
+        }
+        ```
+        
+- Go Routine
+    - go {function name}
+- Race Condition - Different threads working on the same work which messed up the variable value
+    - Example
+        
+        ```go
+        package main
+        
+        import (
+        	"fmt"
+        	"runtime"
+        	"sync"
+        )
+        
+        func main() {
+        	fmt.Println("CPUs: ", runtime.NumCPU())
+        	fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+        	const gs = 100
+        	var wg sync.WaitGroup
+        	wg.Add(gs)
+        	counter := 0
+        	for i := 0; i < gs; i++ {
+        		go func() {
+        			v := counter
+        			// time.Sleep(time.Second)
+        			runtime.Gosched()
+        			v++
+        			counter = v
+        			wg.Done()
+        		}()
+        		fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+        	}
+        
+        	fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+        	wg.Wait()
+        	fmt.Println("Counter: ", counter)
+        }
+        ```
+        
+    - To check whether code has any race conditions
+        - `go run -race xxx.go`
+    - Fix
+        - Option 1 - Mutex - `var mu sync.Mutex`  (Similar to the lock in C language)
+            
+            ```go
+            package main
+            
+            import (
+            	"fmt"
+            	"runtime"
+            	"sync"
+            )
+            
+            func main() {
+            	fmt.Println("CPUs: ", runtime.NumCPU())
+            	fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+            	const gs = 100
+            	var wg sync.WaitGroup
+            	wg.Add(gs)
+            	counter := 0
+            	for i := 0; i < gs; i++ {
+            		go func() {
+            			v := counter
+            			**mu.Lock()**
+            			// time.Sleep(time.Second)
+            			runtime.Gosched()
+            			v++
+            			counter = v
+            			**mu.Unlock()**
+            			wg.Done()
+            		}()
+            		fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+            	}
+            
+            	fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+            	wg.Wait()
+            	fmt.Println("Counter: ", counter)
+            }
+            ```
+            
+        - Option 2 - Atomic - Sync → Atomic Package
+            
+            ```go
+            package main
+            
+            import (
+            	"fmt"
+            	"runtime"
+            	"sync"
+            )
+            
+            func main() {
+            	fmt.Println("CPUs: ", runtime.NumCPU())
+            	fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+            	
+            	**var counter int64**
+            	
+            	const gs = 100
+            	var wg sync.WaitGroup
+            	wg.Add(gs)
+            	for i := 0; i < gs; i++ {
+            		go func() {
+            			**atomic.addInt64(&counter, 1)**
+            			// time.Sleep(time.Second)
+            			runtime.Gosched()
+            			wg.Done()
+            		}()
+            		fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+            	}
+            
+            	fmt.Println("GoRoutines: ", runtime.NumGoroutine())
+            	wg.Wait()
+            	fmt.Println("Counter: ", counter)
+            }
+            ```
+            
+- **“go” Statement - starts the execution of a function call as an independent concurrent thread of control, or goroutine, within the same address space**
+    - If the function has any return values, they are discarded when the function completes
