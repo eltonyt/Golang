@@ -1203,3 +1203,239 @@ func main() {
             
 - **“go” Statement - starts the execution of a function call as an independent concurrent thread of control, or goroutine, within the same address space**
     - If the function has any return values, they are discarded when the function completes
+	
+	### Section 28 - Channels
+
+- Example
+    
+    ```go
+    // This code doesn't work cuz channel was blocked
+    // 无缓冲 channel 的发送动作一直要到有一个接收者接收这个值才算完成，否则都是阻塞着的，也就是说，发送的数据需要被读取后，发送才会完成
+    func main() {
+    	c := make(chan int)
+    	c <- 42
+    	fmt.Println(<-c)
+    }
+    
+    // fix - Option 1 - Insert values to the channel through another go routine, so that values are pulled from the channel 
+    // when the value is inserted to the channel
+    func main() {
+    	c := make(chan int)
+    	
+    	go func() {
+    			c <- 42
+    	}()
+    	
+    	fmt.Println(<-c)
+    }
+    
+    // fix - Option 2 - Buffer Channel
+    func main() {
+    	// Specify the buffer size
+    	c := make(chan int, 1)
+    	c <- 42
+    	fmt.Println(<-c)
+    }
+    
+    ```
+    
+- Process
+    - making a channel - `c := make(chan int)`
+    - putting values on a channel - `c <- 42`
+    - Taking values off a channel - `v := <-c`
+    - Channels Block
+        - Solution - the value has to be passed/received synchronously
+- Directional Channels
+    - Bi-directional channel - `c := make(chan int)`
+    - Receive-only channel (Channel can only receive values) - `c := make( chan<- int, 2)`
+    - Send-only channel (Channel can only send values) - `c := make( <-chan int, 2)`
+    - Cast
+        - Bi-directional → Receive-only channel works
+        - Bi-directional → Send-only channel works
+        - Send-only channel → Bi-directional Information lose → Doesn’t work
+        - Receive-only channel → Bi-directional Information lose → Doesn’t work
+- Use Channels
+    - Example
+        
+        ```go
+        func main() {
+        	c := make(chan int)
+        	go foo(c)
+        	// go is not needed here cuz the main goroutine runs first, which runs bar function first that pulls a value to channel.
+        	// After that, the foo method which is running in another go routine that inserts the value works
+        	bar(c)
+        	fmt.Println("Finished")
+        }
+        
+        func foo(c chan<- int) {
+        	c <- 42
+        }
+        
+        func bar(c <-chan int) {
+        	fmt.Println(<-c)
+        }
+        ```
+        
+    - Range & Close
+        - Need to close channel within function foo, otherwise causing the channel blocks exception again - **Close function is always called when all values are pushed to the channel**
+        
+        ```go
+        func main() {
+        	c := make(chan int)
+        	go foo(c)
+        	**for v := range c** {
+        		fmt.Println(v)
+        	}
+        	fmt.Println("Finished")
+        }
+        
+        func foo(c chan<- int) {
+        	for i:=0; i < 100; i ++ {
+        			c <- 42
+        	}
+        	**close(c)**
+        }
+        ```
+        
+    - Select - This is similar to the select statement within C#
+        
+        ```go
+        func main() {
+        	eve := make(chan int)
+        	odd := make(chan int)
+        	quit := make(chan int)
+        	
+        	go send(eve, odd, quit)
+        	
+        	receive(eve, odd, quit)
+        }
+        
+        func receive(e, o, q <-chan int) {
+        	for {
+        		select {
+        			case v:= <- e:
+        				fmt.Println("From the even channel: ", v)
+        			case v:= <- o:
+        				fmt.Println("From the odd channel: ", v)
+        			case v:= <- q:
+        				fmt.Println("From the quit channel: ", v)
+        				return
+        		}
+        		return 
+        	}
+        } 
+        
+        func send(e, o, q chan<- int) {
+        	for i := 0; i < 100; i ++ {
+        		if i % 2 == 0 {
+        			e <- i
+        		} else {
+        			o <- i
+        		}
+        	}
+        	close(e)
+        	close(o)
+        	q <- 0
+        }
+        ```
+        
+    - With Comma ok idiom
+        - - Check if can pull the value from channel properly
+- Fan-in and Fan-out Pattern
+    - Fan-in - maximum number of input signals that feed the input equations of a logic cell -  values from multiple channels to one channel
+    - Fan-out - maximum number of output signals that are fed by the output equations of a logic cell - values to multiple channels from one channel
+- Context - Avoid leaking goroutines
+    - Why?
+        - In Go servers, each incoming request is handled in its own goroutine. Request handlers often start additional goroutines to access backends such as databases and RPC services. The set of goroutines working on a request typically needs access to request-specific values such as the identity of the end user, authorization tokens, and the request’s deadline. When a request is canceled or times out, all the goroutines working on that request should exit quickly so the system can reclaim any resources they are using.
+        - At Google, we developed a `context` package that makes it easy to pass request-scoped values, cancellation signals, and deadlines across API boundaries to all the goroutines involved in handling a request. The package is publicly available as [context](https://go.dev/pkg/context). This article describes how to use the package and provides a complete working example.
+
+### Section 30 - Error Handling
+
+- Go has no exceptions, instead use error type in Go
+    - Error is a interface which contains method `Error() string` - So if you have a type which contains Error() method, your type will also be considered as an error type
+- Example
+    
+    ```go
+    n, err := fmt.Println("123123")
+    if (err != nil) {
+    	fmt.Println(err)
+    }
+    fmt.println(n)
+    ```
+    
+- Printing & Logging
+    - fmt.Println()
+    - log.Println() - write into a log file
+    - log.Fatalln() - Fatal Errors
+        - os.Exit()
+        - deferred functions don’t run, exit immediately
+    - Log.Panicln() - Somewhere between fatal & normal error
+        - deferred functions run
+        - can use “recover”
+    - panic()
+- Recover
+    - Only useful inside deferred functions
+        
+        ```go
+        defer func() {
+        	if r := recover(); r != nil {
+        		fmt.Println(xxxx)
+        	}
+        }
+        ```
+        
+- Errors with info
+- Assertion - You assert the type of a variable to the child type
+    - Example - info is not a variable within error interface. Instead, it’s bound to type customErr. In order to call that variable, I have to use Assertion to access that information.
+        
+        ```go
+        package main
+        
+        import "fmt"
+        
+        func main() {
+        	c1 := customErr{
+        		info: "This is my customized error",
+        	}
+        	foo(c1)
+        }
+        
+        type customErr struct {
+        	info string
+        }
+        
+        func (ce customErr) Error() string {
+        	fmt.Sprintf("Here is the error: %v", ce.info)
+        	return ce.info
+        }
+        
+        func foo(e error) {
+        	fmt.Println("Foo ran - ", **e.().info**, "\n")
+        }
+        ```
+        
+    - Assertion vs Conversion
+        - Conversion - You convert that type to a parent type
+        
+        ```go
+        type hotdog int
+        func main() {
+        	var x hotdog = 42
+        	fmt Println(x)
+        	fmt.Printf("%T", x)
+        	
+        	var y int
+        	// Conversion -> Covert Hotdog type to int
+        	y = int(x)
+        	fmt.Printf(%T), y
+        }
+        ```
+        
+
+### Section 32 - Documentation
+
+- godoc - Gdoc extracts and generates documentation for Go packages
+    - `go doc <package>`
+    - `go doc <sym>[.method]`
+    - `go doc [package.]<sym>[.method]`
+    - `go doc [package.][sym.]<method>`
